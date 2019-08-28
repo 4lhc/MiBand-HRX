@@ -41,18 +41,8 @@ class AuthenticationDelegate(DefaultDelegate):
                 self.device._send_key()
             else:
                 self.device.state = AUTH_STATES.AUTH_FAILED
-        # elif hnd == self.device._char_heart_measure.getHandle():
-            # self.device.queue.put((QUEUE_TYPES.HEART, data))
         elif hnd == self.device._char_sensor_measure.getHandle():
             self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data))
-        elif hnd == 0x38:
-            # Not sure about this, need test
-            if len(data) == 20 and struct.unpack('b', data[0:1])[0] == 1:
-                self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data))
-            elif len(data) == 16:
-                self.device.queue.put((QUEUE_TYPES.RAW_HEART, data))
-        # The fetch characteristic controls the communication with the activity characteristic.
-        # It can trigger the communication.
         elif hnd == self.device._char_fetch.getHandle():
             if data[:3] == b'\x10\x01\x01':
                 # get timestamp from what date the data actually is received
@@ -70,55 +60,12 @@ class AuthenticationDelegate(DefaultDelegate):
             else:
                 print("Unexpected data on handle " + str(hnd) + ": " + str(data.encode("hex")))
                 return
-         # The activity characteristic sends the previews recorded information
-         # from one given timestamp until now.
-        elif hnd == self.device._char_activity.getHandle():
-            if len(data) % 4 is not 1:
-                if self.device.last_timestamp > datetime.now() - timedelta(minutes=1):
-                    self.device.active = False
-                    return
-                print("Trigger more communication")
-                time.sleep(1)
-                t = self.device.last_timestamp + timedelta(minutes=1)
-                self.device.start_get_previews_data(t)
-            else:
-                pkg = self.device.pkg
-                self.device.pkg += 1
-                i = 1
-                while i < len(data):
-                    index = int(pkg) * 4 + (i - 1) / 4
-                    timestamp = self.device.first_timestamp + timedelta(minutes=index)
-                    self.device.last_timestamp = timestamp
-                    # category = int.from_bytes(data[i:i + 1], byteorder='little')
-                    category = struct.unpack("<B", data[i:i + 1])
-                    intensity = struct.unpack("B", data[i + 1:i + 2])[0]
-                    steps = struct.unpack("B", data[i + 2:i + 3])[0]
-                    heart_rate = struct.unpack("B", data[i + 3:i + 4])[0]
-
-                    print("{}: category: {}; acceleration {}; steps {}; heart rate {};".format(
-                        timestamp.strftime('%d.%m - %H:%M'),
-                        category,
-                        intensity,
-                        steps,
-                        heart_rate)
-                    )
-
-                    i += 4
-
-                    d = datetime.now().replace(second=0, microsecond=0) - timedelta(minutes=1)
-                    if timestamp == d:
-                        self.device.active = False
-                        return
         else:
             self.device._log.error("Unhandled Response " + hex(hnd) + ": " +
                                    str(data.encode("hex")) + " len:" + str(len(data)))
 
 
 class MiBand2(Peripheral):
-    # _KEY = b'\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x40\x41\x42\x43\x44\x45'
-    # _send_key_cmd = struct.pack('<18s', b'\x01\x08' + _KEY)
-    # _send_rnd_cmd = struct.pack('<2s', b'\x02\x08')
-    # _send_enc_key = struct.pack('<2s', b'\x03\x08')
     _KEY = b'\xf5\xd2\x29\x87\x65\x0a\x1d\x82\x05\xab\x82\xbe\xb9\x38\x59\xcf'
     _send_key_cmd = struct.pack('<18s', b'\x01\x00' + _KEY)
     _send_rnd_cmd = struct.pack('<2s', b'\x02\x00')
@@ -153,15 +100,6 @@ class MiBand2(Peripheral):
 
         self._char_sensor_ctrl = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_SENSOR_CONTROL)[0]
         self._char_sensor_measure = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_SENSOR_MEASURE)[0]
-        # self._char_heart_ctrl = self.svc_heart.getCharacteristics(UUIDS.CHARACTERISTIC_HEART_RATE_CONTROL)[0]
-        # self._char_heart_measure = self.svc_heart.getCharacteristics(UUIDS.CHARACTERISTIC_HEART_RATE_MEASURE)[0]
-
-        # Recorded information
-        self._char_fetch = self.getCharacteristics(uuid=UUIDS.CHARACTERISTIC_FETCH)[0]
-        self._desc_fetch = self._char_fetch.getDescriptors(forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
-        self._char_activity = self.getCharacteristics(uuid=UUIDS.CHARACTERISTIC_ACTIVITY_DATA)[0]
-        self._desc_activity = self._char_activity.getDescriptors(forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
-
         # Enable auth service notifications on startup
         self._auth_notif(True)
         # Let MiBand2 to settle
@@ -218,21 +156,11 @@ class MiBand2(Peripheral):
 
     def _parse_raw_accel(self, bytes):
         # https://github.com/Freeyourgadget/Gadgetbridge/issues/63#issuecomment-493740447
-
         res = []
-        try:
-            self._log.info('Len: {}'.format(len(bytes)))
-            for i in xrange(3):
-                g = struct.unpack('hhh', bytes[2 + i * 6:8 + i * 6])
-                res.append({'x': g[0], 'y': g[1], 'wtf': g[2]})
-            # WTF
-            if len(bytes) == 20 and struct.unpack('b', bytes[0])[0] == 2:
-                print(struct.unpack('B', bytes[1]))
-                print("Accel x: %s y: %s z: %s" % struct.unpack('hhh', bytes[2:8]))
-                print("Accel x: %s y: %s z: %s" % struct.unpack('hhh', bytes[8:14]))
-                print("Accel x: %s y: %s z: %s" % struct.unpack('hhh', bytes[14:]))
-        except:
-            pass
+        for i in range(int((len(bytes)-2)/6)):
+            g = struct.unpack('hhh', bytes[2 + i * 6:8 + i * 6])
+            res.append({'x': g[0], 'y': g[1], 'z': g[2]})
+            self._log.debug(res[-1])
         return res
 
     def _parse_raw_heart(self, bytes):
@@ -396,21 +324,6 @@ class MiBand2(Peripheral):
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_ALERT)[0]
         char.write(_type)
 
-    def get_heart_rate_one_time(self):
-        # stop continous
-        self._char_heart_ctrl.write(b'\x15\x01\x00', True)
-        # stop manual
-        self._char_heart_ctrl.write(b'\x15\x02\x00', True)
-        # start manual
-        self._char_heart_ctrl.write(b'\x15\x02\x01', True)
-        res = None
-        while not res:
-            self.waitForNotifications(self.timeout)
-            res = self._get_from_queue(QUEUE_TYPES.HEART)
-
-        rate = struct.unpack('bb', res)[1]
-        return rate
-
 
     def start_raw_data_realtime(self, accel_raw_callback=None):
         # char_m = self.svc_heart.getCharacteristics(UUIDS.CHARACTERISTIC_HEART_RATE_MEASURE)[0]
@@ -421,28 +334,19 @@ class MiBand2(Peripheral):
             self.accel_raw_callback = accel_raw_callback
 
         char_sensor_desc = self._char_sensor_measure.getDescriptors(forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
-        # char_sensor = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_SENSOR)[0]
-
-        # enabling accelerometer raw data notifications
-        # start getting sensor data
-        # wrote \x10\x03\x01 -> ctrl
-        # read 01-26-fe-ff-78-00-e2-ff
         self._log.info("Enabling accel raw data notification")
         self._char_sensor_ctrl.write(b'\x01\x01\x19')
         self._log.info("Start getting sensor data")
-        # self._char_sensor_ctrl.write(b'\x02')
         self._char_sensor_ctrl.write(b'\x02')
         self._log.info("Data written to descrip.")
         char_sensor_desc.write(b'\x01\x00')
         t = time.time()
         while True:
-            # self._log.debug("Waiting for notifications")
             self.waitForNotifications(0.5)
             self._parse_queue()
             # send ping request every 12 sec
             if (time.time() - t) >= 12:
                 self._char_sensor_ctrl.write(b'\x01\x01\x19')
-                # self._char_sensor_ctrl.write(b'\x10\x03\x01')
                 self._char_sensor_ctrl.write(b'\x02')
                 t = time.time()
 
