@@ -192,11 +192,6 @@ class MiBand2(Peripheral):
         datetime_last_charge = self._parse_date(bytes[11:18])
         datetime_last_off = self._parse_date(bytes[3:10])
 
-        # WTF?
-        # struct.unpack('b', bytes[10])
-        # struct.unpack('b', bytes[18])
-        # print struct.unpack('b', bytes[10]), struct.unpack('b', bytes[18])
-
         res = {
             "status": status,
             "level": level,
