@@ -40,19 +40,8 @@ if args.standard:
     print ('Message notif')
     band.send_alert(ALERT_TYPES.MESSAGE)
     time.sleep(3)
-    # this will vibrate till not off
-    # print ('Phone notif')
-    # band.send_alert(ALERT_TYPES.PHONE)
-    # time.sleep(8)
     # print ('OFF')
     # band.send_alert(ALERT_TYPES.NONE)
-    # print ('Soft revision:',band.get_revision())
-    # print ('Hardware revision:',band.get_hrdw_revision())
-    # print ('Serial:',band.get_serial())
-    # print ('Battery:', band.get_battery_info())
-    # print ('Time:', band.get_current_time())
-    # print ('Steps:', band.get_steps())
-    # print ('Heart rate oneshot:', band.get_heart_rate_one_time())
 
 if args.set_current_time:
     now = datetime.now()
@@ -61,7 +50,8 @@ if args.set_current_time:
     print ('Time:', band.get_current_time())
 
 def f(x):
-    print ('Raw accel :', x)
+    pass
+    # print ('Raw accel :', x)
 
 if args.live:
     band.start_raw_data_realtime( accel_raw_callback=f)
