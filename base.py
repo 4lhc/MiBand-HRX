@@ -225,7 +225,7 @@ class MiBand2(Peripheral):
                 res = self.queue.get(False)
                 _type = res[0]
                 if self.accel_raw_callback and _type == QUEUE_TYPES.RAW_ACCEL:
-                    self._log.debug(res)
+                    # self._log.debug(res)
                     self.accel_raw_callback(self._parse_raw_accel(res[1]))
             except Empty as err:
                 # self._log.debug("Exception in _parse_queue: {}".format(err))
