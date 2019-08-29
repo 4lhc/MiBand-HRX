@@ -9,13 +9,17 @@ The below commands were helpful in identification of services and characteristic
 #### List services
 
 ```sh
-    gatttool -b <MAC-ADDRESS> -t random --primary
-    ```
+
+gatttool -b <MAC-ADDRESS> -t random --primary
+
+```
 
 #### List characteristics
 
 ```sh
-    gatttool -b <MAC-ADDRESS> -t random --characteristics
+
+gatttool -b <MAC-ADDRESS> -t random --characteristics
+
 ```
 
 Forked from [creotiv/MiBand2](https://github.com/creotiv/MiBand2)
