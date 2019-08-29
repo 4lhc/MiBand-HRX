@@ -9,17 +9,13 @@ The following commands were helpful in identification of services and characteri
 #### List services
 
 ```sh
-
 gatttool -b <MAC-ADDRESS> -t random --primary
-
 ```
 
 #### List characteristics
 
 ```sh
-
 gatttool -b <MAC-ADDRESS> -t random --characteristics
-
 ```
 
 
@@ -48,7 +44,7 @@ Sample: ``0x0100 0500 8200 0b00 0400 8000 0b00 0300 8100 0b00``
 | -  | signed x  |signed y   | signed z  |  signed x |  signed y | signed z  | signed x  | signed y  |  signed z |
 
 
-<img src="accel_plot.png" width="1200">
+<img src="accel_plot.gif" width="1200">
 
 
 
