@@ -1,5 +1,6 @@
 # MiBand-HRX
-Library to work with Xiaomi MiBand HRX Edition Accelerometer Data(Support python2/python3). Intended for extraction of accelerometer data only.
+Library to work with Xiaomi MiBand HRX Edition Accelerometer Data(Support python2/python3). Intended for extraction of accelerometer data only,
+for experimentaion with ROS and gesture recognition.
 Forked from [creotiv/MiBand2](https://github.com/creotiv/MiBand2)
 
 # BLE
@@ -19,7 +20,7 @@ Forked from [creotiv/MiBand2](https://github.com/creotiv/MiBand2)
 
 Data received in packets of byte size ``20``, ``14`` or ``8``.
 
-``0x0100 0500 8200 0b00 0400 8000 0b00 0300 8100 0b00``
+Sample: ``0x0100 0500 8200 0b00 0400 8000 0b00 0300 8100 0b00``
 
 
 |0100  | 0500  | 8200  | 0b00 | 0400  | 8000  | 0b00  | 0300  | 8100  | 0b00   |
