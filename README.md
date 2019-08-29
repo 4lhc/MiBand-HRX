@@ -17,7 +17,7 @@ Forked from [creotiv/MiBand2](https://github.com/creotiv/MiBand2)
 
 # Processing Accelerometer Data
 
-Data received in packets of byte size 20, 14 or 8.
+Data received in packets of byte size ``20``, ``14`` or ``8``.
 
 ``0x0100 0500 8200 0b00 0400 8000 0b00 0300 8100 0b00``
 
@@ -25,7 +25,6 @@ Data received in packets of byte size 20, 14 or 8.
 |0100  | 0500  | 8200  | 0b00 | 0400  | 8000  | 0b00  | 0300  | 8100  | 0b00   |
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | -  | signed x  |signed y   | signed z  |  signed x |  signed y | signed z  | signed x  | signed y  |  signed z |
-|   |   |   |   |   |   |   |   |   |   |
 
 
 <img src="accel_plot.png" width="1200">
