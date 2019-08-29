@@ -15,21 +15,15 @@ Forked from [creotiv/MiBand2](https://github.com/creotiv/MiBand2)
     - Write without response ``0x02`` to service ``0000fee1-0000-1000-8000-00805f9b34fb`` characeteristic ``00000001-0000-3512-2118-0009af100700``
     - Write ``0x0100`` to notification descriptor to enable notification
 
-# Parsing Accelerometer Data
+# Processing Accelerometer Data
 
 Data received in packets of byte size 20, 14 or 8.
 
-``0x01 00 0500 8200 0b00 0400 8000 0b00 0300 8100 0b00``
-
-byte 0   - 01
-
-byte 1   - counter
-
-byte 2&3 - X
-
-byte 4&5 - Y
-
-byte 6&7 - Z...
+``0x0100 0500 8200 0b00 0400 8000 0b00 0300 8100 0b00``
+|0100  | 0500  | 8200  | 0b00 | 0400  | 8000  | 0b00  | 0300  | 8100  | 0b00   |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| -  | signed x  |signed y   | signed z  |  signed x |  signed y | signed z  | signed x  | signed y  |  signed z |
+|   |   |   |   |   |   |   |   |   |   |
 
 
 <img src="accel_plot.png" width="1200">
