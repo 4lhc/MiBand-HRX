@@ -93,7 +93,6 @@ class MiBand2(Peripheral):
 
         self.svc_1 = self.getServiceByUUID(UUIDS.SERVICE_MIBAND1)
         self.svc_2 = self.getServiceByUUID(UUIDS.SERVICE_MIBAND2)
-        # self.svc_heart = self.getServiceByUUID(UUIDS.SERVICE_DEVICE_INFO)
 
         self._char_auth = self.svc_2.getCharacteristics(UUIDS.CHARACTERISTIC_AUTH)[0]
         self._desc_auth = self._char_auth.getDescriptors(forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
@@ -155,12 +154,16 @@ class MiBand2(Peripheral):
     # Parse helpers ###################################################################
 
     def _parse_raw_accel(self, bytes):
-        # https://github.com/Freeyourgadget/Gadgetbridge/issues/63#issuecomment-493740447
-        res = []
+        #https://github.com/Freeyourgadget/Gadgetbridge/issues/63#issuecomment-493740447
+        res = [] #{'x':[], 'y':[], 'z':[]}
         for i in range(int((len(bytes)-2)/6)):
             g = struct.unpack('hhh', bytes[2 + i * 6:8 + i * 6])
-            res.append({'x': g[0], 'y': g[1], 'z': g[2]})
-            self._log.debug(res[-1])
+            res.append(g)
+            # res['x'].append(g[0])
+            # res['y'].append(g[1])
+            # res['z'].append(g[2])
+            # res.append({'x': g[0], 'y': g[1], 'z': g[2]})
+            # self._log.debug(res)
         return res
 
     def _parse_raw_heart(self, bytes):
