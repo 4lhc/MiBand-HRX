@@ -59,6 +59,7 @@ Sample: ``0x0100 0500 8200 0b00 0400 8000 0b00 0300 8100 0b00``
 3) [Freeyourgadget team](https://github.com/Freeyourgadget/Gadgetbridge/tree/master/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huami/miband2)
 4) [ragcsalo's comment](https://github.com/Freeyourgadget/Gadgetbridge/issues/63#issuecomment-493740447)
 5) [Xiaomi band protocol analyze](http://changy-.github.io/articles/xiao-mi-band-protocol-analyze.html)
+6) [creotiv donate link](https://github.com/creotiv/MiBand2#donate)
 
 
 
@@ -89,5 +90,3 @@ sudo hciconfig hci0 reset
 ```
 Also there is cool JS library that made Volodymyr Shymansky https://github.com/vshymanskyy/miband-js
 
-# Donate
-If you like what im doing, you can send me some money for pepsi(i dont drink alcohol). https://www.paypal.me/creotiv
