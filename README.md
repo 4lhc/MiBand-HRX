@@ -1,5 +1,5 @@
 # MiBand-HRX
-Library to work with Xiaomi MiBand HRX Edition Accelerometer Data(Support python2/python3). Intended for extraction of accelerometer data only,
+Library to work with Xiaomi MiBand HRX Edition Accelerometer Data. Intended for extraction of accelerometer data only,
 for experimentaions with ROS and gesture recognition.
 
 I couldn't find a solution that worked with MiBand HRX edition as the HRX edition.
