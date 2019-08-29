@@ -2,9 +2,9 @@
 Library to work with Xiaomi MiBand HRX Edition Accelerometer Data. Intended for extraction of accelerometer data only,
 for experimentaions with ROS and gesture recognition.
 
-I couldn't find a solution that worked with MiBand HRX edition as the HRX edition.
+I couldn't find a solution that worked with MiBand HRX edition. This repo is forked from [creotiv/MiBand2](https://github.com/creotiv/MiBand2) and modified to work with HRX bands.
 
-The below commands were helpful in identification of services and characteristics specific to HRX bands. Xiaomi doesn't provide user descriptions for the services and characteristics.
+The following commands were helpful in identification of services and characteristics specific to HRX bands. Xiaomi doesn't provide user descriptions for the services and characteristics, which makes it harder. There are plenty of reverse engineered solutions for MiBand2 & 3 which were extremely [helpful](#sources--references).
 
 #### List services
 
@@ -22,7 +22,6 @@ gatttool -b <MAC-ADDRESS> -t random --characteristics
 
 ```
 
-Forked from [creotiv/MiBand2](https://github.com/creotiv/MiBand2)
 
 # BLE
 - Authentication is same as MiBand2
