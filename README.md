@@ -1,6 +1,19 @@
 # MiBand-HRX
 Library to work with Xiaomi MiBand HRX Edition Accelerometer Data(Support python2/python3). Intended for extraction of accelerometer data only,
-for experimentaion with ROS and gesture recognition.
+for experimentaions with ROS and gesture recognition.
+
+I couldn't find a solution that worked with MiBand HRX edition as the HRX edition.
+
+The below commands were helpful in identification of services and characteristics specific to HRX bands. Xiaomi doesn't provide user descriptions for the services and characteristics.
+List services
+```sh
+    gatttool -b <MAC-ADDRESS> -t random --primary
+    ```
+List characteristics
+```sh
+    gatttool -b <MAC-ADDRESS> -t random --characteristics
+```
+
 Forked from [creotiv/MiBand2](https://github.com/creotiv/MiBand2)
 
 # BLE
