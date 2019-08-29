@@ -9,7 +9,6 @@ except ImportError:
     from queue import Queue, Empty
 from bluepy.btle import Peripheral, DefaultDelegate, ADDR_TYPE_RANDOM, BTLEException
 
-
 from constants import UUIDS, AUTH_STATES, ALERT_TYPES, QUEUE_TYPES
 
 
@@ -22,14 +21,12 @@ class AuthenticationDelegate(DefaultDelegate):
         self.device = device
 
     def handleNotification(self, hnd, data):
-        # Debug purposes
         if hnd == self.device._char_auth.getHandle():
             if data[:3] == b'\x10\x01\x01':
                 self.device._req_rdn()
             elif data[:3] == b'\x10\x01\x04':
                 self.device.state = AUTH_STATES.KEY_SENDING_FAILED
             elif data[:3] == b'\x10\x02\x01':
-                # 16 bytes
                 random_nr = data[3:]
                 self.device._send_enc_rdn(random_nr)
             elif data[:3] == b'\x10\x02\x04':
@@ -72,7 +69,7 @@ class MiBand2(Peripheral):
     _send_enc_key = struct.pack('<2s', b'\x03\x00')
     pkg = 0
 
-    def __init__(self, mac_address, timeout=0.5, debug=False):
+    def __init__(self, mac_address, timeout=0.5, debug=False, accel_max_Q=300):
         FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
         logging.basicConfig(format=FORMAT)
         log_level = logging.WARNING if not debug else logging.DEBUG
@@ -87,6 +84,7 @@ class MiBand2(Peripheral):
         self.mac_address = mac_address
         self.state = None
         self.queue = Queue()
+        self.accel_queue = Queue(maxsize=accel_max_Q)
         self.heart_measure_callback = None
         self.heart_raw_callback = None
         self.accel_raw_callback = None
@@ -99,10 +97,8 @@ class MiBand2(Peripheral):
 
         self._char_sensor_ctrl = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_SENSOR_CONTROL)[0]
         self._char_sensor_measure = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_SENSOR_MEASURE)[0]
-        # Enable auth service notifications on startup
-        self._auth_notif(True)
-        # Let MiBand2 to settle
-        self.waitForNotifications(0.1)
+        self._auth_notif(True)   # Enable auth service notifications on startup
+        self.waitForNotifications(0.1)                  # Let MiBand2 to settle
 
     # Auth helpers ######################################################################
 
@@ -154,20 +150,10 @@ class MiBand2(Peripheral):
     # Parse helpers ###################################################################
 
     def _parse_raw_accel(self, bytes):
-        #https://github.com/Freeyourgadget/Gadgetbridge/issues/63#issuecomment-493740447
-        res = [] #{'x':[], 'y':[], 'z':[]}
+        res = []
         for i in range(int((len(bytes)-2)/6)):
             g = struct.unpack('hhh', bytes[2 + i * 6:8 + i * 6])
             res.append(g)
-            # res['x'].append(g[0])
-            # res['y'].append(g[1])
-            # res['z'].append(g[2])
-            # res.append({'x': g[0], 'y': g[1], 'z': g[2]})
-            # self._log.debug(res)
-        return res
-
-    def _parse_raw_heart(self, bytes):
-        res = struct.unpack('HHHHHHH', bytes[2:])
         return res
 
     @staticmethod
