@@ -11,6 +11,7 @@ The below commands were helpful in identification of services and characteristic
 ```sh
     gatttool -b <MAC-ADDRESS> -t random --primary
     ```
+
 #### List characteristics
 
 ```sh
