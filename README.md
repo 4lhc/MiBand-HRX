@@ -84,9 +84,9 @@ sudo hcitool lescan
 ```sh
 python example.py --mac MAC_ADDRESS --init
 ```
-6) Run this to call demo functions
+6) Run this to get live accel data from the device
 ```sh
-python example.py --standard --mac MAC_ADDRESS
+python example.py --live --mac MAC_ADDRESS
 python example.py --help
 ```
 7) If you having problems(BLE can glitch sometimes) try this and repeat from 4)
