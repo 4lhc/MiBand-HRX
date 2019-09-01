@@ -220,7 +220,7 @@ class MiBand2(Peripheral):
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_ALERT)[0]
         char.write(_type)
 
-    def start_raw_data_realtime(self, accel_raw_callback=None):
+    def start_raw_data_realtime(self, accel_raw_callback=None, duration=None):
         if accel_raw_callback:
             self.accel_raw_callback = accel_raw_callback
 
@@ -236,6 +236,10 @@ class MiBand2(Peripheral):
             self.waitForNotifications(0.5)
             self._parse_queue()
             # send ping request every 60 sec
+            if duration and (time.time() - t) > duration:
+                char_sensor_desc.write(b'\x00\x00')   #stop getting notifications
+                self._char_sensor_ctrl.write(b'\x03') #stopping
+                break
             if (time.time() - t) > 60:
                 self._char_sensor_ctrl.write(b'\x01\x01\x19')
                 self._char_sensor_ctrl.write(b'\x02')

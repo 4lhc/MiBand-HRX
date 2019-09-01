@@ -38,7 +38,7 @@ def f(g):
     #print ('Raw accel :', g)
 
 if args.live:
-    band.start_raw_data_realtime( accel_raw_callback=f)
+    band.start_raw_data_realtime( accel_raw_callback=f, duration=80)
 
 def dump_to_file(g):
     fname="accel_dump.txt"
