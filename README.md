@@ -51,7 +51,9 @@ angles.
 <p align="center">
 <img src="roll_pitch_eqn.png" width="400">
 </p>
+
 ## Plot
+
 <p align="center">
 <img src="accel_plot.gif" width="1200">
 </p>
