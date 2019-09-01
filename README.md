@@ -48,12 +48,13 @@ Sample: ``0x0100 0500 8200 0b00 0400 8000 0b00 0300 8100 0b00``
 In the absence of linear acceleration, the accelerometer output is a measurement of the rotated
 gravitational field vector and can be used to determine the accelerometer pitch and roll orientation
 angles.
-
-<img align="center" src="roll_pitch_eqn.png" width="400">
-
+<p align="center">
+<img src="roll_pitch_eqn.png" width="400">
+</p>
 ## Plot
-<img align="center" src="accel_plot.gif" width="1200">
-
+<p align="center">
+<img src="accel_plot.gif" width="1200">
+</p>
 
 
 
