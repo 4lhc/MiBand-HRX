@@ -34,6 +34,7 @@ gatttool -b <MAC-ADDRESS> -t random --characteristics
 
 # Processing Accelerometer Data
 
+## Parsing
 Data received in packets of byte size ``20``, ``14`` or ``8``.
 
 Sample: ``0x0100 0500 8200 0b00 0400 8000 0b00 0300 8100 0b00``
@@ -43,19 +44,27 @@ Sample: ``0x0100 0500 8200 0b00 0400 8000 0b00 0300 8100 0b00``
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | -  | signed x  |signed y   | signed z  |  signed x |  signed y | signed z  | signed x  | signed y  |  signed z |
 
+## calculating roll and pitch
+In the absence of linear acceleration, the accelerometer output is a measurement of the rotated
+gravitational field vector and can be used to determine the accelerometer pitch and roll orientation
+angles.
 
+<img src="roll_pitch_eqn.png" width="400">
+
+## plot
 <img src="accel_plot.gif" width="1200">
 
 
 
 
 # Sources & References
-1) Base lib provided by [Leo Soares](https://github.com/leojrfs/miband2)
+1) [Base lib provided by Leo Soares](https://github.com/leojrfs/miband2)
 2) [Volodymyr Shymanskyy](https://github.com/vshymanskyy/miband2-python-test)
-3) [Freeyourgadget team](https://github.com/Freeyourgadget/Gadgetbridge/tree/master/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huami/miband2)
-4) [ragcsalo's comment](https://github.com/Freeyourgadget/Gadgetbridge/issues/63#issuecomment-493740447)
+3) [Freeyourgadget Team](https://github.com/Freeyourgadget/Gadgetbridge/tree/master/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huami/miband2)
+4) [ragcsalo's Comment](https://github.com/Freeyourgadget/Gadgetbridge/issues/63#issuecomment-493740447)
 5) [Xiaomi band protocol analyze](http://changy-.github.io/articles/xiao-mi-band-protocol-analyze.html)
-6) [creotiv donate link](https://github.com/creotiv/MiBand2#donate)
+6) [Tilt Sensing Using 3-Axis Accelerometer](https://www.nxp.com/docs/en/application-note/AN3461.pdf)
+7) [creotiv donate link](https://github.com/creotiv/MiBand2#donate)
 
 
 
@@ -66,8 +75,8 @@ Sample: ``0x0100 0500 8200 0b00 0400 8000 0b00 0300 8100 0b00``
 pip install -r requirements.txt
 ```
 2) Turn on your Bluetooth
-3) Unpair you MiBand2 from current mobile apps
-4) Find out you MiBand2 MAC address
+3) Unpair you MiBand from current mobile apps
+4) Find out you MiBand MAC address
 ```sh
 sudo hcitool lescan
 ```
@@ -84,5 +93,3 @@ python example.py --help
 ```sh
 sudo hciconfig hci0 reset
 ```
-Also there is cool JS library that made Volodymyr Shymansky https://github.com/vshymanskyy/miband-js
-
