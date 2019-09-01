@@ -242,6 +242,7 @@ class MiBand2(Peripheral):
                 t = time.time()
 
     def stop_realtime(self):
+        self._log.info("Disabling realtime accel notification")
         self._stop_getting_real_time.set()
         char_sensor_desc = self._char_sensor_measure.getDescriptors(forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
         char_sensor_desc.write(b'\x00\x00')   #stop getting notifications
@@ -262,15 +263,15 @@ class MiBand2(Peripheral):
     def get_euler(self):
         try:
             gx, gy, gz = self.accel_queue.get()
-            roll = math.atan2(-gy, gz)
-            pitch = math.atan2(gx, math.sqrt(pow(gx, 2) + pow(gz, 2)))
-            return (gx, gy, 0)
+            roll = math.atan2(gy, gz)
+            pitch = math.atan2(-gx, math.sqrt(pow(gy, 2) + pow(gz, 2)))
+            return (roll, pitch, 0)
         except Empty:
             # self._log.debug("Queue is Empty")
             return (0, 0, 0)
 
-    def dump_to_file(self, length=1000):
-        with open('dump.txt', 'w') as fp:
+    def dump_to_file(self, fname="accel_dump.txt", length=1000):
+        with open(fname, 'w') as fp:
             while length > 0:
                 length -= 1
                 fp.writelines("{}\n".format(self.accel_queue.get()))
