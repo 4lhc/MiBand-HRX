@@ -34,8 +34,7 @@ if args.alert:
     band.send_alert(ALERT_TYPES.MESSAGE)
 
 def f(g):
-    pass
-    #print ('Raw accel :', g)
+    print ('Raw accel :', g)
 
 if args.live:
     band.start_raw_data_realtime( accel_raw_callback=f, duration=80)
