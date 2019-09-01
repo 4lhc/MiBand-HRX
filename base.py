@@ -10,6 +10,7 @@ except ImportError:
 from bluepy.btle import Peripheral, DefaultDelegate, ADDR_TYPE_RANDOM, BTLEException
 from constants import UUIDS, AUTH_STATES, ALERT_TYPES, QUEUE_TYPES
 from threading import Event
+import math
 
 
 class AuthenticationDelegate(DefaultDelegate):
@@ -261,10 +262,8 @@ class MiBand2(Peripheral):
     def get_euler(self):
         try:
             gx, gy, gz = self.accel_queue.get()
-            roll = math.atan2(-gx, gz)
-            pitch = math.atan2(gy, math.sqrt(pow(gx, 2) + pow(gz, 2)))
-
-
+            roll = math.atan2(-gy, gz)
+            pitch = math.atan2(gx, math.sqrt(pow(gx, 2) + pow(gz, 2)))
             return (gx, gy, 0)
         except Empty:
             # self._log.debug("Queue is Empty")
