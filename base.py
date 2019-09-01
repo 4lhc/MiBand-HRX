@@ -4,12 +4,12 @@ import logging
 from datetime import datetime, timedelta
 from Crypto.Cipher import AES
 try:
-    from Queue import Queue, Empty
+    from Queue import Queue, Empty, Full
 except ImportError:
-    from queue import Queue, Empty
+    from queue import Queue, Empty, Full
 from bluepy.btle import Peripheral, DefaultDelegate, ADDR_TYPE_RANDOM, BTLEException
-
 from constants import UUIDS, AUTH_STATES, ALERT_TYPES, QUEUE_TYPES
+from threading import Event
 
 
 class AuthenticationDelegate(DefaultDelegate):
@@ -70,37 +70,31 @@ class MiBand2(Peripheral):
     pkg = 0
 
     def __init__(self, mac_address, timeout=0.5, debug=False, accel_max_Q=300):
+        self._stop_getting_real_time = Event()
         FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
         logging.basicConfig(format=FORMAT)
         log_level = logging.WARNING if not debug else logging.DEBUG
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.setLevel(log_level)
-
         self._log.info('Connecting to ' + mac_address)
         Peripheral.__init__(self, mac_address, addrType=ADDR_TYPE_RANDOM)
         self._log.info('Connected')
-
         self.timeout = timeout
         self.mac_address = mac_address
         self.state = None
         self.queue = Queue()
         self.accel_queue = Queue(maxsize=accel_max_Q)
-        self.heart_measure_callback = None
-        self.heart_raw_callback = None
         self.accel_raw_callback = None
-
         self.svc_1 = self.getServiceByUUID(UUIDS.SERVICE_MIBAND1)
         self.svc_2 = self.getServiceByUUID(UUIDS.SERVICE_MIBAND2)
-
         self._char_auth = self.svc_2.getCharacteristics(UUIDS.CHARACTERISTIC_AUTH)[0]
         self._desc_auth = self._char_auth.getDescriptors(forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
-
         self._char_sensor_ctrl = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_SENSOR_CONTROL)[0]
         self._char_sensor_measure = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_SENSOR_MEASURE)[0]
         self._auth_notif(True)   # Enable auth service notifications on startup
         self.waitForNotifications(0.1)                  # Let MiBand2 to settle
 
-    # Auth helpers ######################################################################
+    # Auth helpers ############################################################
 
     def _auth_notif(self, enabled):
         if enabled:
@@ -147,61 +141,20 @@ class MiBand2(Peripheral):
         self._char_auth.write(send_cmd)
         self.waitForNotifications(self.timeout)
 
-    # Parse helpers ###################################################################
+    # Parse helpers ###########################################################
 
     def _parse_raw_accel(self, bytes):
-        res = []
         for i in range(int((len(bytes)-2)/6)):
             g = struct.unpack('hhh', bytes[2 + i * 6:8 + i * 6])
-            res.append(g)
-        return res
-
-    @staticmethod
-    def _parse_date(bytes):
-        year = struct.unpack('h', bytes[0:2])[0] if len(bytes) >= 2 else None
-        month = struct.unpack('b', bytes[2:3])[0] if len(bytes) >= 3 else None
-        day = struct.unpack('b', bytes[3:4])[0] if len(bytes) >= 4 else None
-        hours = struct.unpack('b', bytes[4:5])[0] if len(bytes) >= 5 else None
-        minutes = struct.unpack('b', bytes[5:6])[0] if len(bytes) >= 6 else None
-        seconds = struct.unpack('b', bytes[6:7])[0] if len(bytes) >= 7 else None
-        day_of_week = struct.unpack('b', bytes[7:8])[0] if len(bytes) >= 8 else None
-        fractions256 = struct.unpack('b', bytes[8:9])[0] if len(bytes) >= 9 else None
-
-        return {"date": datetime(*(year, month, day, hours, minutes, seconds)), "day_of_week": day_of_week, "fractions256": fractions256}
-
-    @staticmethod
-    def create_date_data(date):
-        data = struct.pack( 'hbbbbbbbxx', date.year, date.month, date.day, date.hour, date.minute, date.second, date.weekday(), 0 )
-        return data
-
-    def _parse_battery_response(self, bytes):
-        level = struct.unpack('b', bytes[1:2])[0] if len(bytes) >= 2 else None
-        last_level = struct.unpack('b', bytes[19:20])[0] if len(bytes) >= 20 else None
-        status = 'normal' if struct.unpack('b', bytes[2:3])[0] == 0 else "charging"
-        datetime_last_charge = self._parse_date(bytes[11:18])
-        datetime_last_off = self._parse_date(bytes[3:10])
-
-        res = {
-            "status": status,
-            "level": level,
-            "last_level": last_level,
-            "last_level": last_level,
-            "last_charge": datetime_last_charge,
-            "last_off": datetime_last_off
-        }
-        return res
+            try:
+                self.accel_queue.put(g)
+            except Full:
+                self.accel_queue.get_nowait()
+                self.accel_queue.put(g)
+            return g
 
     # Queue ###################################################################
 
-    def _get_from_queue(self, _type):
-        try:
-            res = self.queue.get(False)
-        except Empty:
-            return None
-        if res[0] != _type:
-            self.queue.put(res)
-            return None
-        return res[1]
 
     def _parse_queue(self):
         while True:
@@ -209,10 +162,8 @@ class MiBand2(Peripheral):
                 res = self.queue.get(False)
                 _type = res[0]
                 if self.accel_raw_callback and _type == QUEUE_TYPES.RAW_ACCEL:
-                    # self._log.debug(res)
                     self.accel_raw_callback(self._parse_raw_accel(res[1]))
             except Empty as err:
-                # self._log.debug("Exception in _parse_queue: {}".format(err))
                 break
 
     # API ####################################################################
@@ -248,31 +199,6 @@ class MiBand2(Peripheral):
             self._log.error(self.state)
             return False
 
-    def get_battery_info(self):
-        char = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_BATTERY)[0]
-        return self._parse_battery_response(char.read())
-
-    def get_current_time(self):
-        char = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_CURRENT_TIME)[0]
-        return self._parse_date(char.read()[0:9])
-
-    def set_current_time(self, date):
-        char = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_CURRENT_TIME)[0]
-        return char.write(self.create_date_data(date), True)
-
-    def get_revision(self):
-        svc = self.getServiceByUUID(UUIDS.SERVICE_DEVICE_INFO)
-        char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_REVISION)[0]
-        data = char.read()
-        revision = struct.unpack('9s', data[-9:])[0] if len(data) == 9 else None
-        return revision
-
-    def get_hrdw_revision(self):
-        svc = self.getServiceByUUID(UUIDS.SERVICE_DEVICE_INFO)
-        char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_HRDW_REVISION)[0]
-        data = char.read()
-        revision = struct.unpack('8s', data[-8:])[0] if len(data) == 8 else None
-        return revision
 
     def set_encoding(self, encoding="en_US"):
         char = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_CONFIGURATION)[0]
@@ -287,33 +213,13 @@ class MiBand2(Peripheral):
         serial = struct.unpack('12s', data[-12:])[0] if len(data) == 12 else None
         return serial
 
-    def get_steps(self):
-        char = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_STEPS)[0]
-        a = char.read()
-        steps = struct.unpack('h', a[1:3])[0] if len(a) >= 3 else None
-        meters = struct.unpack('h', a[5:7])[0] if len(a) >= 7 else None
-        fat_gramms = struct.unpack('h', a[2:4])[0] if len(a) >= 4 else None
-        # why only 1 byte??
-        callories = struct.unpack('b', a[9:10])[0] if len(a) >= 10 else None
-        return {
-            "steps": steps,
-            "meters": meters,
-            "fat_gramms": fat_gramms,
-            "callories": callories
-
-        }
 
     def send_alert(self, _type):
         svc = self.getServiceByUUID(UUIDS.SERVICE_ALERT)
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_ALERT)[0]
         char.write(_type)
 
-
     def start_raw_data_realtime(self, accel_raw_callback=None):
-        # char_m = self.svc_heart.getCharacteristics(UUIDS.CHARACTERISTIC_HEART_RATE_MEASURE)[0]
-        # char_ctrl = self.svc_heart.getCharacteristics(UUIDS.CHARACTERISTIC_HEART_RATE_CONTROL)[0]
-
-
         if accel_raw_callback:
             self.accel_raw_callback = accel_raw_callback
 
@@ -325,48 +231,53 @@ class MiBand2(Peripheral):
         self._log.info("Data written to descrip.")
         char_sensor_desc.write(b'\x01\x00')
         t = time.time()
-        while True:
+        while not self.is_realtime_stopped():
             self.waitForNotifications(0.5)
             self._parse_queue()
-            # send ping request every 12 sec
-            if (time.time() - t) >= 12:
+            # send ping request every 60 sec
+            if (time.time() - t) > 60:
                 self._char_sensor_ctrl.write(b'\x01\x01\x19')
                 self._char_sensor_ctrl.write(b'\x02')
                 t = time.time()
 
     def stop_realtime(self):
-        # char_m = self.svc_heart.getCharacteristics(UUIDS.CHARACTERISTIC_HEART_RATE_MEASURE)[0]
-        char_d = char_m.getDescriptors(forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
-        # char_ctrl = self.svc_heart.getCharacteristics(UUIDS.CHARACTERISTIC_HEART_RATE_CONTROL)[0]
-
-        char_sensor1 = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_HZ)[0]
-        char_sens_d1 = char_sensor1.getDescriptors(forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
-
-        char_sensor2 = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_SENSOR)[0]
-
-        # stop heart monitor continues
-        char_ctrl.write(b'\x15\x01\x00', True)
-        char_ctrl.write(b'\x15\x01\x00', True)
-        # IMO: stop heart monitor notifications
-        char_d.write(b'\x00\x00', True)
-        # WTF
-        char_sensor2.write(b'\x03')
-        # IMO: stop notifications from sensors
-        char_sens_d1.write(b'\x00\x00', True)
-
+        self._stop_getting_real_time.set()
+        char_sensor_desc = self._char_sensor_measure.getDescriptors(forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
+        char_sensor_desc.write(b'\x00\x00')   #stop getting notifications
+        self._char_sensor_ctrl.write(b'\x03') #stopping
         self.accel_raw_callback = None
 
-    def start_get_previews_data(self, start_timestamp):
-        self._auth_previews_data_notif(True)
-        self.waitForNotifications(0.1)
-        print("Trigger activity communication")
-        year = struct.pack("<H", start_timestamp.year)
-        month = struct.pack("<H", start_timestamp.month)[0]
-        day = struct.pack("<H", start_timestamp.day)[0]
-        hour = struct.pack("<H", start_timestamp.hour)[0]
-        minute = struct.pack("<H", start_timestamp.minute)[0]
-        ts = year + month + day + hour + minute
-        trigger = b'\x01\x01' + ts + b'\x00\x08'
-        self._char_fetch.write(trigger, False)
-        self.active = True
+    def is_realtime_stopped(self):
+        return self._stop_getting_real_time.is_set()
+
+    def get_accel(self):
+        try:
+            # self._log.debug(print(list(self.accel_queue.queue)))
+            return self.accel_queue.get()
+        except Empty:
+            # self._log.debug("Queue is Empty")
+            return (0, 0, 0)
+
+    def get_euler(self):
+        try:
+            gx, gy, gz = self.accel_queue.get()
+            roll = math.atan2(-gx, gz)
+            pitch = math.atan2(gy, math.sqrt(pow(gx, 2) + pow(gz, 2)))
+
+
+            return (gx, gy, 0)
+        except Empty:
+            # self._log.debug("Queue is Empty")
+            return (0, 0, 0)
+
+    def dump_to_file(self, length=1000):
+        with open('dump.txt', 'w') as fp:
+            while length > 0:
+                length -= 1
+                fp.writelines("{}\n".format(self.accel_queue.get()))
+
+
+
+
+
 
