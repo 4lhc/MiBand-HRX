@@ -49,10 +49,10 @@ In the absence of linear acceleration, the accelerometer output is a measurement
 gravitational field vector and can be used to determine the accelerometer pitch and roll orientation
 angles.
 
-<img src="roll_pitch_eqn.png" width="400">
+<img align="center" src="roll_pitch_eqn.png" width="400">
 
 ## Plot
-<img src="accel_plot.gif" width="1200">
+<img align="center" src="accel_plot.gif" width="1200">
 
 
 
