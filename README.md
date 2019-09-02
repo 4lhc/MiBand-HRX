@@ -1,6 +1,6 @@
 # MiBand-HRX
 Library to work with Xiaomi MiBand HRX Edition Accelerometer Data. Intended for extraction of accelerometer data only,
-for experimentaions with ROS and gesture recognition.
+for experimentaions with ROS and gesture recognition. Check out the ROS interfacing example [here](https://github.com/4lhc/ROS/tree/master/learning_ws/src/x1_miband_control).
 
 I couldn't find a solution that worked with MiBand HRX edition. This repo is forked from [creotiv/MiBand2](https://github.com/creotiv/MiBand2) and modified to work with HRX bands.
 
